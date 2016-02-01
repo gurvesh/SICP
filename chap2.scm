@@ -321,7 +321,32 @@
   (/ (width-interval i)
      (center i)))
 
+;; Ex 2.13 ;;
+
 ;; The percentage tolerances get added when multiplying the intervals
 ;; (define i1 (make-center-percent 1 0.1))
 ;; (define i2 (make-center-percent 10 0.05))
 ;; (percent (mul-interval i1 i2)) gives us 0.149..
+
+;; Ex 2.14 - 2.16 ;;
+
+;; This is about propogation of errors. The more number of
+;; operations, the higher the error propogation. In the first case we're
+;; multiplying, adding and dividing two intervals. Every time we multiply or
+;; divide, the error doubles. In the second case, the "one" variable has 0
+;; percent width. So the error does not propogate unnecessarily. Therefore the
+;; second solution is better.
+
+;; scheme@(guile-user)> (define ione (make-interval 1 1))
+;; scheme@(guile-user)> (percent ione)
+;; $4 = 0
+;; scheme@(guile-user)> (percent (div-interval ione ione))
+;; $5 = 0.0
+;; scheme@(guile-user)> (define i2 (make-center-percent 1 0.0000001))
+;; scheme@(guile-user)> (percent (div-interval i2 i2))
+;; $6 = 2.000000000612583e-7
+;; scheme@(guile-user)> (define i3 (make-center-percent 1 0.05))
+;; scheme@(guile-user)> (percent (div-interval i3 i3))
+;; $7 = 0.09975062344139651
+
+;; My guess is - we need a system of "factorisation" that removes as much as possible such sources of errors.
