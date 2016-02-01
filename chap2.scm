@@ -349,4 +349,57 @@
 ;; scheme@(guile-user)> (percent (div-interval i3 i3))
 ;; $7 = 0.09975062344139651
 
-;; My guess is - we need a system of "factorisation" that removes as much as possible such sources of errors.
+;; My guess is - we need a system of "factorisation" that removes as much as
+;; possible such sources of errors.
+
+
+;; Ex 2.17 ;;
+
+(define (_last-pair l)
+  (if (<= 1 (length l))
+      l
+      (_last-pair (cdr l))))
+
+;; Ex 2.18 ;;
+
+(define (_reverse l)
+  (define (reverse-helper l1 l2)
+    (if (null? l1)
+        l2
+        (reverse-helper (cdr l1)
+                        (cons (car l1) l2))))
+  (reverse-helper l '()))
+
+(define (__reverse l)
+  (if (null? l)
+      l
+      (append (__reverse (cdr l))
+              (list (car l)))))
+
+;; Ex 2.19 ;;
+;; Change counting revisited ;;
+
+(define us-coins (list 50 25 10 5 1))
+(define uk-coins (list 100 50 20 10 5 2 1 0.5))
+
+;; Note - I have NEVER seen a 0.5p coin in the UK - but ok - we follow this
+;; through
+
+(define (cc amount coin-values)
+  (cond ((= amount 0) 1)
+        ((or (< amount 0) (no-more? coin-values)) 0)
+        (else
+         (+ (cc amount
+                (except-first-denomination coin-values))
+            (cc (- amount
+                   (first-denomination coin-values))
+                coin-values)))))
+
+(define (first-denomination coin-vals)
+  (car coin-vals))
+
+(define (except-first-denomination coin-vals)
+  (cdr coin-vals))
+
+(define (no-more? coin-vals)
+  (null? coin-vals))
