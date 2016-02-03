@@ -403,3 +403,50 @@
 
 (define (no-more? coin-vals)
   (null? coin-vals))
+
+;; Ex 2.20 ;;
+;; same-parity function
+
+(define (same-parity lead . tail)
+  (define (sp-help f li lo)
+    (cond ((null? li) lo)
+          ((f (car li)) (sp-help f (cdr li)
+                                 (append lo (list (car li)))))
+          (else (sp-help f (cdr li) lo))))
+  (sp-help (if (even? lead) even? odd?)
+           tail
+           (list lead)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (scale-list items factor)
+  (if (null? items)
+      '()
+      (cons (* (car items) factor)
+            (scale-list (cdr items) factor))))
+
+(define (_map proc items)
+  (if (null? items)
+      '()
+      (cons (proc (car items))
+            (_map proc (cdr items)))))
+
+;; Ex 2.21
+
+(define (square-list items)
+  (if (null? items)
+      '()
+      (cons (square (car items))
+            (square-list (cdr items)))))
+
+(define (_square-list items)
+  (map (lambda (x) (* x x)) items))
+
+;; Ex 2.23 The main thing here is how to get a multiline working One way might
+;; be through let. Another (used here) is via cond.
+
+(define (_for-each proc items)
+  (cond ((null? items) #t)
+        (else (proc (car items))
+              (_for-each proc (cdr items)))))
