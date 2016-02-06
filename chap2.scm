@@ -450,3 +450,37 @@
   (cond ((null? items) #t)
         (else (proc (car items))
               (_for-each proc (cdr items)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (count-leaves x)
+  (cond ((null? x) 0)
+        ((not (pair? x)) 1)
+        (else (+ (count-leaves (car x))
+                 (count-leaves (cdr x))))))
+
+;; Ex 2.27
+;; Deep reverse
+
+(define (deep-reverse x)
+  (if (pair? x)
+      (append (deep-reverse (cdr x))
+              (list (deep-reverse (car x))))
+      x))
+
+(define (_deep-reverse x)
+  (if (pair? x)
+      (reverse (map _deep-reverse x))
+      x))
+
+;; Ex 2.28
+;; Fringe - a bit tough
+
+(define nil '())
+
+(define (fringe l)
+  (cond ((null? l) nil)
+        ((not (pair? (car l))) (cons (car l)
+                                     (fringe (cdr l))))
+        (else (append (fringe (car l))
+                      (fringe (cdr l))))))
