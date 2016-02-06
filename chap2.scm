@@ -484,3 +484,90 @@
                                      (fringe (cdr l))))
         (else (append (fringe (car l))
                       (fringe (cdr l))))))
+
+;; Ex 2.29
+;; Binary mobile
+
+(define (make-mobile left right)
+  (list left right))
+
+(define (make-branch length structure)
+  (list length structure))
+
+(define left-branch car)
+
+(define (right-branch mobile)
+  (list-ref mobile 1))
+
+(define branch-length car)
+
+(define (branch-structure branch)
+  (list-ref branch 1))
+
+(define (total-weight mobile)
+  (let ((lbs (branch-structure (left-branch mobile)))
+        (rbs (branch-structure (right-branch mobile))))
+    (+ (branch-weight lbs)
+       (branch-weight rbs))))
+
+(define (branch-weight branch-structure)
+  (if (not (pair? branch-structure))
+      branch-structure
+      (total-weight branch-structure)))
+
+(define (balanced? mobile)
+  (let ((lbl (branch-length (left-branch mobile)))
+        (rbl (branch-length (right-branch mobile)))
+        (lbw (branch-weight (branch-structure (left-branch mobile))))
+        (rbw (branch-weight (branch-structure (right-branch mobile))))
+        (lbs (branch-structure (left-branch mobile)))
+        (rbs (branch-structure (right-branch mobile))))
+    (and (= (* lbw lbl)
+            (* rbw rbl))
+         (if (not (pair? lbs))
+             #t
+             (balanced? lbs))
+         (if (not (pair? rbs))
+             #t
+             (balanced? rbs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (scale-tree tree factor)
+  (cond ((null? tree) nil)
+        ((not (pair? tree)) (* tree factor))
+        (else (cons (scale-tree (car tree) factor)
+                    (scale-tree (cdr tree) factor)))))
+
+(define (_scale-tree tree factor)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (_scale-tree sub-tree factor)
+             (* sub-tree factor)))
+       tree))
+
+;; Ex 2.30 ;;;;;;;
+
+(define (square-tree tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (square-tree sub-tree)
+             (square sub-tree)))
+       tree))
+
+(define (_square-tree tree)
+  (cond ((null? tree) nil)
+        ((not (pair? tree)) (square tree))
+        (else (cons (_square-tree (car tree))
+                    (_square-tree (cdr tree))))))
+
+;; Ex 2.31 ;;;;
+;; Tree map abstraction
+
+(define (tree-map f tree)
+  (cond ((null? tree) nil)
+        ((not (pair? tree)) (f tree))
+        (else (cons (tree-map f (car tree))
+                    (tree-map f (cdr tree))))))
+
+(define (__square-tree tree) (tree-map square tree))
