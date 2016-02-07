@@ -571,3 +571,50 @@
                     (tree-map f (cdr tree))))))
 
 (define (__square-tree tree) (tree-map square tree))
+
+;; Ex 2.32 ;;
+;; Subsets ;;
+
+(define (subsets s)
+  (if (null? s)
+      (list nil)
+      (let ((rest (subsets (cdr s))))
+        (append rest (map (lambda (subset)
+                            (cons (car s) subset))
+                          rest)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;; Sequences as conventional interfaces ;;;;;;;;;;
+
+(define (fib n)
+  (fib-iter 1 0 n))
+
+(define (fib-iter a b count)
+  (if (= count 0)
+      b
+      (fib-iter (+ a b) a (- count 1))))
+
+(define (sum-odd-squares tree)
+  (cond ((null? tree) 0)
+        ((not (pair? tree)) (if (odd? tree)
+                                (square tree)
+                                0))
+        (else (+ (sum-odd-squares (car tree))
+                 (sum-odd-squares (cdr tree))))))
+
+(define (even-fibs n)
+  (define (next k)
+    (if (> k n)
+        nil
+        (let ((f (fib k)))
+          (if (even? f)
+              (cons f (next (+ k 1)))
+              (next (+ k 1))))))
+  (next 0))
+
+(define (range n)
+  (define (iter-range n ans)
+    (if (< n 0)
+        ans
+        (iter-range (- n 1) (cons n ans))))
+  (iter-range (- n 1) nil))
