@@ -667,3 +667,70 @@
 (define (_count-leaves t)
   (accumulate + 0 (map (lambda (x) 1)
                        t)))
+
+;; Ex 2.36 ;;
+
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs)))))
+
+;; Ex 2.37 ;;
+
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+(define (matrix-*-vector m v)
+  (map (lambda (sub-vec)
+         (dot-product v sub-vec))
+       m))
+
+(define (transpose mat)
+  (accumulate-n cons '() mat))
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (sub-vec)
+           (matrix-*-vector cols sub-vec))
+         m)))
+
+;; Ex 2.38 ;;
+;; Fold-left ;;
+
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+(define fold-right accumulate)
+
+;; scheme@(guile-user)> (fold-left / 1 (list 1 2 3))
+;; $39 = 1/6
+;; scheme@(guile-user)> (accumulate / 1 (list 1 2 3))
+;; $40 = 3/2
+
+;; scheme@(guile-user)> (fold-right list nil (list 1 2 3))
+;; $42 = (1 (2 (3 ())))
+;; scheme@(guile-user)> (fold-left list nil (list 1 2 3))
+;; $43 = (((() 1) 2) 3)
+
+;; Fold-left and fold-right should gave the same answer if the operation being
+;; applied is commutative and associative. So (fold-left + 0 '(1 2 3)) =
+;; (fold-right + 0 '(1 2 3))
+
+;; Ex 2.39 ;;
+
+(define (___reverse sequence)
+  (fold-right (lambda (x y)
+                (append y (list x)))
+              nil
+              sequence))
+
+(define (____reverse sequence)
+  (fold-left (lambda (x y)
+               (cons y x))
+             nil sequence))
