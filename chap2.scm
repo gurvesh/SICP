@@ -800,3 +800,67 @@
                   (map (lambda (j) (list i j))
                        (range-interval 1 (- i 1))))
                 (range-interval 1 n)))))
+
+(define (permutations s)
+  (if (null? s)
+      (list nil)
+      (flatmap (lambda (x)
+                 (map (lambda (p) (cons x p))
+                      (permutations (remove x s))))
+               s)))
+
+(define (remove item seq)
+  (filter (lambda (x)
+            (not (= x item)))
+          seq))
+
+;;;;;;;;;;;;;
+;; Ex 2.40 ;;
+
+(define (unique-pairs n)
+  (flatmap (lambda (i)
+             (map (lambda (j) (list i j))
+                  (range-interval 1 (- i 1))))
+           (range-interval 1 n)))
+
+(define (_prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum?
+               (unique-pairs n))))
+
+;;;;;;;;;;;;;
+;; Ex 2.41 ;;
+
+(define (ordered-triples n)
+  (flatmap (lambda (i)
+             (flatmap (lambda (j)
+                        (map (lambda (k) (list i j k))
+                             (range-interval 1 (- j 1))))
+                      (range-interval 1 (- i 1))))
+           (range-interval 1 n)))
+
+(define (sum-ordered-triples n s)
+  (filter (lambda (l)
+            (= s (+ (car l)
+                    (cadr l)
+                    (caddr l))))
+          (ordered-triples n)))
+
+;;;;;;;;;;;;;
+;; Ex 2.42 ;;
+
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions) (safe? k positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position new-row
+                                    k
+                                    rest-of-queens))
+                 (range-interval 1 board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))
