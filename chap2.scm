@@ -841,9 +841,7 @@
 
 (define (sum-ordered-triples n s)
   (filter (lambda (l)
-            (= s (+ (car l)
-                    (cadr l)
-                    (caddr l))))
+            (= s (accumulate + 0 l)))
           (ordered-triples n)))
 
 ;;;;;;;;;;;;;
@@ -854,7 +852,7 @@
     (if (= k 0)
         (list empty-board)
         (filter
-         (lambda (positions) (safe? k positions))
+         (lambda (positions) (safe? positions)) ;; We don't really need k here so removed
          (flatmap
           (lambda (rest-of-queens)
             (map (lambda (new-row)
@@ -864,3 +862,29 @@
                  (range-interval 1 board-size)))
           (queen-cols (- k 1))))))
   (queen-cols board-size))
+
+(define empty-board nil)
+
+(define (adjoin-position row column existing-positions)
+  (cons (list row column) existing-positions))
+
+(define (safe? positions)
+  (or (= 1 (length positions))
+      (let ((last-queen (car positions))
+            (other-queens (cdr positions)))
+        (and
+         ;; We check if any other queen is in the same row
+         (null? (filter (lambda (position)
+                          (= (car position)
+                             (car last-queen)))
+                        other-queens))
+         ;; By definition no other queen would be in the same column, so don't need
+         ;; to check for that
+
+         ;; And check for diagonal attacks
+         (null? (filter (lambda (position)
+                          (= (abs (- (car last-queen)
+                                     (car position)))
+                             (abs (- (cadr last-queen)
+                                     (cadr position)))))
+                        other-queens))))))
