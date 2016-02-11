@@ -869,22 +869,22 @@
   (cons (list row column) existing-positions))
 
 (define (safe? positions)
-  (or (= 1 (length positions))
+  (or (= 1 (length positions)) ;; There is only 1 queen on the board
+
       (let ((last-queen (car positions))
             (other-queens (cdr positions)))
-        (and
-         ;; We check if any other queen is in the same row
-         (null? (filter (lambda (position)
-                          (= (car position)
-                             (car last-queen)))
-                        other-queens))
-         ;; By definition no other queen would be in the same column, so don't need
-         ;; to check for that
 
-         ;; And check for diagonal attacks
-         (null? (filter (lambda (position)
-                          (= (abs (- (car last-queen)
-                                     (car position)))
-                             (abs (- (cadr last-queen)
-                                     (cadr position)))))
-                        other-queens))))))
+        ;; We check if any other queen is in the same row
+        ;; And check for diagonal attacks
+        ;; By definition no other queen would be in the same column, so don't need
+        ;; to check for that
+
+        (null? (filter (lambda (position)
+                         (or  (= (car position)
+                                 (car last-queen))
+
+                              (= (abs (- (car last-queen)
+                                         (car position)))
+                                 (abs (- (cadr last-queen)
+                                         (cadr position))))))
+                       other-queens)))))
