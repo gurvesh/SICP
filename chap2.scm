@@ -1,3 +1,7 @@
+;; #lang racket
+;; only for the picture language, where I've used racket
+
+
 (define (add-rat x y)
   (make-rat (+ (* (numer x) (denom y))
                (* (numer y) (denom x)))
@@ -888,3 +892,115 @@
                                  (abs (- (cadr last-queen)
                                          (cadr position))))))
                        other-queens)))))
+
+;;;;;;;;;;
+;; Some other useful functions
+
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+
+(define (inc x)
+  (+ 1 x))
+
+(define (repeated proc n)
+  (if (= n 1)
+      proc
+      (compose proc (repeated proc (dec n)))))
+
+(define (dec x)
+  (- x 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; Picture Language ;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This work is done in racket by importing the package sicp-pict
+;; Only 2 exercises worked on
+
+;; (define (push comb)
+;;   (lambda (pict n a)
+;;     ((repeated
+;;       (lambda (p) (comb pict p a))
+;;       n)
+;;      pict)))
+
+;; (define right-push (push beside))
+
+;; (require sicp-pict) ;; Comment this out in normal scheme
+
+;; (define e2 (beside einstein (flip-vert einstein)))
+
+;; (define e4 (below e2 e2))
+
+;; (define (flipped-pairs painter)
+;;   (let ((painter2 (beside painter (flip-vert painter))))
+;;     (below painter2 painter2)))
+
+;; (define _e4 (flipped-pairs einstein))
+
+;; ;;;;;;;;;;;;;
+;; ;; Ex 2.49 ;;
+
+;; (define frame-outline
+;;   (segments->painter
+;;    (list (make-segment (make-vect 0 0)
+;;                        (make-vect 1 0))
+;;          (make-segment (make-vect 1 0)
+;;                        (make-vect 1 1))
+;;          (make-segment (make-vect 1 1)
+;;                        (make-vect 0 1))
+;;          (make-segment (make-vect 0 1)
+;;                        (make-vect 0 0)))))
+
+;; (define x-painter
+;;   (segments->painter
+;;    (list (make-segment (make-vect 0 0)
+;;                        (make-vect 1 1))
+;;          (make-segment (make-vect 1 0)
+;;                        (make-vect 0 1)))))
+
+;; (define diamond
+;;   (segments->painter
+;;    (list (make-segment (make-vect 0.5 0)
+;;                        (make-vect 1 0.5))
+;;          (make-segment (make-vect 1 0.5)
+;;                        (make-vect 0.5 1))
+;;          (make-segment (make-vect 0.5 1)
+;;                        (make-vect 0 0.5))
+;;          (make-segment (make-vect 0 0.5)
+;;                        (make-vect 0.5 0)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;;;;;;;;;;;;;
+;; ;; Ex 2.44 ;;
+
+;; (define (right-split painter n)
+;;   (if (= n 0)
+;;       painter
+;;       (let ((smaller (right-split painter (dec n))))
+;;         (beside painter (below smaller smaller)))))
+
+;; (define (up-split painter n)
+;;   (if (= n 0)
+;;       painter
+;;       (let ((smaller (up-split painter (dec n))))
+;;         (below painter (beside smaller smaller)))))
+
+;; (define (corner-split painter n)
+;;   (if (= n 0)
+;;       painter
+;;       (let ((up (up-split painter (dec n)))
+;;             (right (right-split painter (dec n))))
+;;         (let ((top-left (beside up up))
+;;               (bottom-right (below right right))
+;;               (corner (corner-split painter (dec n))))
+;;           (beside (below painter top-left)
+;;                   (below bottom-right corner))))))
+
+;; (define (square-limit painter n)
+;;   (let ((quarter (corner-split painter n)))
+;;     (let ((half (beside (flip-horiz quarter) quarter)))
+;;       (below (flip-vert half) half))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
