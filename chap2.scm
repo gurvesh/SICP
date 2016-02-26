@@ -1004,3 +1004,28 @@
 ;;       (below (flip-vert half) half))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (memq item x)
+  (cond ((null? x) false)
+        ((eq? item (car x)) x)
+        (else (memq item (cdr x)))))
+
+;;;;;;;;;;;;;
+;; Ex 2.54 ;;
+
+(define (_equal? list1 list2)
+  (cond ((and (null? list1) 
+              (null? list2)) 
+         #t)
+        
+        ((or (null? list1) 
+             (null? list2)) 
+         #f)
+        
+        ((and (pair? (car list1))
+              (pair? (car list2))) 
+         (and (_equal? (car list1) (car list2))
+              (_equal? (cdr list1) (cdr list2))))
+        
+        (else (and (eq? (car list1) (car list2))
+                   (_equal? (cdr list1) (cdr list2))))))
