@@ -489,6 +489,8 @@
         (else (append (fringe (car l))
                       (fringe (cdr l))))))
 
+(define flatten fringe)
+
 ;; Ex 2.29
 ;; Binary mobile
 
@@ -1014,25 +1016,28 @@
 ;; Ex 2.54 ;;
 
 (define (_equal? list1 list2)
-  (cond ((and (null? list1) 
-              (null? list2)) 
+  (cond ((and (null? list1)
+              (null? list2))
          #t)
-        
-        ((or (null? list1) 
-             (null? list2)) 
+
+        ((or (null? list1)
+             (null? list2))
          #f)
-        
+
         ((and (pair? (car list1))
-              (pair? (car list2))) 
+              (pair? (car list2)))
          (and (_equal? (car list1) (car list2))
               (_equal? (cdr list1) (cdr list2))))
-        
+
         (else (and (eq? (car list1) (car list2))
                    (_equal? (cdr list1) (cdr list2))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Symbolic differentiation 
+;; Symbolic differentiation
+
+;;;;;;;;;;;;;;;;;;;;
+;; Ex 2.56 + 2.57 ;;
 
 (define (deriv exp var)
   (cond ((number? exp) 0)
@@ -1044,6 +1049,11 @@
                                        (deriv (multiplicand exp) var))
                          (make-product (deriv (multiplier exp) var)
                                        (multiplicand exp))))
+        ((exponentiation? exp) (make-product
+                                (make-product (exponent exp)
+                                              (make-exponentiation (base exp)
+                                                                   (dec (exponent exp))))
+                                (deriv (base exp) var)))
         (else
          (error "unknown expression type: DERIV" exp))))
 
@@ -1054,22 +1064,36 @@
        (variable? v2)
        (eq? v1 v2)))
 
-(define (make-sum a1 a2) 
-  (cond ((=number? a1 0) a2)
-        ((=number? a2 0) a1)
-        ((and (number? a1) (number? a2))
-         (+ a1 a2)) 
-        (else (list '+ a1 a2))))
+(define (make-sum . xs)
+  (let ((nums (filter number? xs))
+        (vars (filter (compose not number?) xs)))
+    (let ((part-sum (accumulate + 0 nums)))
+      (cond ((null? vars) part-sum)
+            ((and (= 0 part-sum)
+                  (= 1 (length vars)))
+             (car vars))
+            ((= 0 part-sum) (append '(+) vars))
+            (else (append '(+) (list part-sum) vars))))))
 
 (define (=number? exp num)
   (and (number? exp) (= exp num)))
 
-(define (make-product m1 m2) 
-  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
-        ((=number? m1 1) m2)
-        ((=number? m2 1) m1)
-        ((and (number? m1) (number? m2)) (* m1 m2))
-        (else (list '* m1 m2))))
+(define (make-product . xs)
+  (let ((nums (filter number? xs))
+        (vars (filter (compose not number?) xs)))
+    (let ((part-prod (accumulate * 1 nums)))
+      (cond ((= 0 part-prod) 0)
+            ((null? vars) part-prod)
+            ((and (= 1 part-prod)
+                  (= 1 (length vars)))
+             (car vars))
+            ((= 1 part-prod) (append '(*) vars))
+            (else (append '(*) (list part-prod) vars))))))
+
+(define (make-exponentiation base exponent)
+  (cond ((=number? exponent 0) 1)
+        ((=number? exponent 1) base)
+        (else (list '** base exponent))))
 
 (define (sum? x)
   (and (pair? x)
@@ -1077,7 +1101,10 @@
 
 (define (addend s) (cadr s))
 
-(define (augend s) (caddr s))
+(define (augend s)
+  (if (null? (cdddr s))
+      (caddr s)
+      (append '(+) (cddr s))))
 
 (define (product? x)
   (and (pair? x)
@@ -1085,5 +1112,114 @@
 
 (define (multiplier p) (cadr p))
 
-(define (multiplicand p) (caddr p))
+(define (multiplicand p)
+  (if (null? (cdddr p))
+      (caddr p)
+      (append '(*) (cddr p))))
 
+(define (exponentiation? x)
+  (and (pair? x)
+       (eq? (car x) '**)))
+
+(define (base ex) (cadr ex))
+
+(define (exponent ex) (caddr ex))
+
+;;;;;;;;;;;;;
+;; Ex 2.58 ;;
+
+(define (_deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp) (if (same-variable? exp var) 1 0))
+        ((_sum? exp) (_make-sum (_deriv (_addend exp) var)
+                                (_deriv (_augend exp) var)))
+        ((_product? exp) (_make-sum
+                          (_make-product (_multiplier exp)
+                                        (_deriv (_multiplicand exp) var))
+                          (_make-product (_deriv (_multiplier exp) var)
+                                       (_multiplicand exp))))
+        (else
+         (error "unknown expression type: DERIV" exp))))
+
+(define (_make-sum a1 a2)
+  (cond ((=number? a1 0) a2) ((=number? a2 0) a1)
+        ((and (number? a1) (number? a2)) (+ a1 a2))
+        (else (list a1 '+ a2))))
+
+(define (_sum? x)
+  (and (pair? x) (eq? (cadr x) '+)))
+
+(define (_addend exp) (car exp))
+
+(define (_augend exp) (caddr exp))
+
+(define (_make-product m1 m2)
+  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+        ((=number? m1 1) m2)
+        ((=number? m2 1) m1)
+        ((and (number? m1) (number? m2)) (* m1 m2))
+        (else (list m1 '* m2))))
+
+(define (_product? x)
+  (and (pair? x) (eq? (cadr x) '*)))
+
+(define (_multiplier exp) (car exp))
+
+(define (_multiplicand exp) (caddr exp))
+
+;; Part (b) We use memq The following solution works because the order of
+;; precedence is defined in the deriv function itself. Sum is called before
+;; product. Then the derivs of the addend and augend are applied separately.
+;; This ensures the product is applied BEFORE sum.
+
+(define (operation expr)
+  (if (memq '+ expr)
+      '+
+      '*))
+
+(define (__sum? expr)
+  (eq? '+ (operation expr)))
+
+(define (split-before expr sym)
+  (define (iter expr result)
+    (if (eq? (car expr) sym)
+        result
+        (iter (cdr expr) (append result (list (car expr))))))
+  (let ((result (iter expr '())))
+    (if (= (length result) 1)
+        (car result)
+        result)))
+
+(define (__addend expr)
+  (split-before expr '+))
+
+(define (__multiplier expr)
+  (split-before expr '*))
+
+(define (split-after expr sym)
+  (let ((result (cdr (memq sym expr))))
+    (if (= (length result) 1)
+        (car result)
+        result)))
+
+(define (__augend expr)
+  (split-after expr '+))
+
+(define (__multiplicand expr)
+  (split-after expr '*))
+
+(define (__product? expr)
+  (eq? '* (operation expr)))
+
+(define (__deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp) (if (same-variable? exp var) 1 0))
+        ((__sum? exp) (_make-sum (__deriv (__addend exp) var)
+                                (__deriv (__augend exp) var)))
+        ((__product? exp) (_make-sum
+                          (_make-product (__multiplier exp)
+                                         (__deriv (__multiplicand exp) var))
+                          (_make-product (__deriv (__multiplier exp) var)
+                                         (_multiplicand exp))))
+        (else
+         (error "unknown expression type: DERIV" exp))))
