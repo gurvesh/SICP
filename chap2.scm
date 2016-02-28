@@ -1040,7 +1040,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 ;; Ex 2.56 + 2.57 ;;
 =======
-;; Symbolic differentiation 
+;; Symbolic differentiation
 >>>>>>> 8ef0117519032666aa071243c6cca24d4bfcfe34
 
 (define (deriv exp var)
@@ -1083,11 +1083,11 @@
             ((= 0 part-sum) (append '(+) vars))
             (else (append '(+) (list part-sum) vars))))))
 =======
-(define (make-sum a1 a2) 
+(define (make-sum a1 a2)
   (cond ((=number? a1 0) a2)
         ((=number? a2 0) a1)
         ((and (number? a1) (number? a2))
-         (+ a1 a2)) 
+         (+ a1 a2))
         (else (list '+ a1 a2))))
 >>>>>>> 8ef0117519032666aa071243c6cca24d4bfcfe34
 
@@ -1112,7 +1112,7 @@
         ((=number? exponent 1) base)
         (else (list '** base exponent))))
 =======
-(define (make-product m1 m2) 
+(define (make-product m1 m2)
   (cond ((or (=number? m1 0) (=number? m2 0)) 0)
         ((=number? m1 1) m2)
         ((=number? m2 1) m1)
@@ -1253,7 +1253,5 @@
                                          (_multiplicand exp))))
         (else
          (error "unknown expression type: DERIV" exp))))
-=======
-(define (multiplicand p) (caddr p))
 
->>>>>>> 8ef0117519032666aa071243c6cca24d4bfcfe34
+(define (multiplicand p) (caddr p))
