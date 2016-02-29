@@ -1326,3 +1326,20 @@
                       ((= x1 x2)
                        (cons x1 (union-set (cdr set1) (cdr set2)))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sets as binary trees ;;;;
+
+(define (entry tree) (car tree))
+(define (left-branch tree) (card tree))
+(define (right-branch tree) (caddr tree))
+(define (make-tree entry left right)
+  (list entry left right))
+
+(define (element-of-set? x set)
+  (cond ((null? set) false)
+        ((= x (entry set)) true)
+        ((< x (entry set))
+         (element-of-set? x (left-branch set)))
+        ((> x (entry set))
+         (element-of-set? x (right-branch set)))))
+
