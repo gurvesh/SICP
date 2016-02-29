@@ -484,8 +484,8 @@
 
 (define (fringe l)
   (cond ((null? l) nil)
-        ((not (pair? (car l))) (cons (car l)
-                                     (fringe (cdr l))))
+        ((not (pair? (car l)))
+         (cons (car l) (fringe (cdr l))))
         (else (append (fringe (car l))
                       (fringe (cdr l))))))
 
@@ -1281,7 +1281,7 @@
 (define (_union-set set1 set2)
   (append set1 set2))
 
-;; The above two procedures are simpler. Intersection and element-of will not be any easier 
+;; The above two procedures are simpler. Intersection and element-of will not be any easier
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;; Sets as ordered list ;;;
@@ -1330,7 +1330,7 @@
 ;; Sets as binary trees ;;;;
 
 (define (entry tree) (car tree))
-(define (left-branch tree) (card tree))
+(define (left-branch tree) (cadr tree))
 (define (right-branch tree) (caddr tree))
 (define (make-tree entry left right)
   (list entry left right))
@@ -1354,3 +1354,44 @@
          (make-tree (entry set)
                     (left-branch set)
                     (adjoin-set x (right-branch set))))))
+
+;;;;;;;;;;;;;
+;; Ex 2.63 ;;
+
+(define (tree->list-1 tree)
+  (if (null? tree)
+      '()
+      (append (tree->list-1 (left-branch tree))
+              (cons (entry tree)
+                    (tree->list-1
+                     (right-branch tree))))))
+
+(define (tree->list-2 tree)
+  (define (copy-to-list tree result-list)
+    (if (null? tree)
+        result-list
+        (copy-to-list (left-branch tree)
+                      (cons (entry tree)
+                            (copy-to-list (right-branch tree)
+                                          result-list)))))
+  (copy-to-list tree '()))
+
+;; scheme@(guile-user)> (define t1 '(7 (3 (1 ()()) (5 ()())) (9 () (11 ()()))))
+;; scheme@(guile-user)> (define t2 '(3 (1 ()()) (7 (5 ()()) (9 () (11 ()())))))
+;; scheme@(guile-user)> (define t3 '(5 (3 (1 ()()) ()) (9 (7 ()()) (11 ()()))))
+;; scheme@(guile-user)> (tree->list-1 t1)
+;; $14 = (1 3 5 7 9 11)
+;; scheme@(guile-user)> (tree->list-2 t1)
+;; $15 = (1 3 5 7 9 11)
+;; scheme@(guile-user)> (tree->list-1 t2)
+;; $16 = (1 3 5 7 9 11)
+;; scheme@(guile-user)> (tree->list-2 t2)
+;; $17 = (1 3 5 7 9 11)
+;; scheme@(guile-user)> (tree->list-1 t3)
+;; $19 = (1 3 5 7 9 11)
+;; scheme@(guile-user)> (tree->list-2 t3)
+;; $20 = (1 3 5 7 9 11)
+
+;; They should produce the same lists if the trees are binary ordered
+
+;;
