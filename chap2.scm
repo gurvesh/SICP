@@ -1457,7 +1457,8 @@
         (let ((next-branch (choose-branch (car bits) current-branch)))
           (if (leaf? next-branch)
               (cons (symbol-leaf next-branch)
-                    (decode-1 (cdr bits) next-branch))))))
+                    (decode-1 (cdr bits) tree))
+              (decode-1 (cdr bits) next-branch)))))
   (decode-1 bits tree))
 
 (define (choose-branch bit branch)
@@ -1466,9 +1467,10 @@
         (else (error "bad bit: CHOOSE-BRANCH" bit))))
 
 ;; Adding a new element to a set already weighted
+;; The final set is in an increasing order of weight
 
 (define (adjoin-set-huff x set)
-  (cond ((null? set) (list set))
+  (cond ((null? set) (list x))
         ((< (weight x) (weight (car set))) (cons x set))
         (else (cons (car set)
                     (adjoin-set-huff x (cdr set))))))
@@ -1477,8 +1479,8 @@
   (if (null? pairs)
       '()
       (let ((pair (car pairs)))
-        (adjoin-set-huff (make-leaf (car pair)  ;; symbol
-                                    (cdr pair)) ;; frequency
+        (adjoin-set-huff (make-leaf (car pair)   ;; symbol
+                                    (cadr pair)) ;; frequency
                          (make-leaf-set (cdr pairs))))))
 
 ;;;;;;;;;;;;;
@@ -1493,4 +1495,40 @@
                     (make-leaf 'C 1)))))
 
 (define sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
+;; (decode sample-message sample-tree) => (A D A B B C A)
+
+;;;;;;;;;;;;;
+;; Ex 2.68 ;;
+
+(define (encode message tree)
+  (if (null? message)
+      '()
+      (append (encode-symbol (car message) tree)
+              (encode (cdr message) tree))))
+
+(define (encode-symbol s tree)
+  (cond ((and (leaf? tree)
+              (eq? s (symbol-leaf tree))) 
+         '())
+        ((memq s (symbols (left-branch-huff tree)))
+         (cons 0 (encode-symbol s (left-branch-huff tree))))
+        ((memq s (symbols (right-branch-huff tree)))
+         (cons 1 (encode-symbol s (right-branch-huff tree))))
+        (else (error "Symbol not in tree" s))))
+
+;;;;;;;;;;;;;
+;; Ex 2.69 ;;
+
+(define (generate-huffman-tree pairs)
+  (successive-merge (make-leaf-set pairs)))
+
+(define (successive-merge ordered-pairs)
+  (define (sm remaining-pairs result)
+    (cond ((null? remaining-pairs) result)
+          ((null? result) (sm (cddr remaining-pairs)
+                              (make-code-tree (car remaining-pairs) (cadr remaining-pairs))))
+          (else (sm (cdr remaining-pairs)
+                    (make-code-tree (car remaining-pairs)
+                                    result)))))
+  (sm ordered-pairs nil))
 
