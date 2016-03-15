@@ -1410,7 +1410,7 @@
                 (non-left-elts (cdr left-result))
                 (right-size (- n (inc left-size))))
             (let ((this-entry (car non-left-elts))
-                  (right-result (partial-tree (cdr non-left-elts) 
+                  (right-result (partial-tree (cdr non-left-elts)
                                               right-size)))
               (let ((right-tree (car right-result))
                     (remaining-elts (cdr right-result)))
@@ -1508,7 +1508,7 @@
 
 (define (encode-symbol s tree)
   (cond ((and (leaf? tree)
-              (eq? s (symbol-leaf tree))) 
+              (eq? s (symbol-leaf tree)))
          '())
         ((memq s (symbols (left-branch-huff tree)))
          (cons 0 (encode-symbol s (left-branch-huff tree))))
@@ -1522,13 +1522,28 @@
 (define (generate-huffman-tree pairs)
   (successive-merge (make-leaf-set pairs)))
 
-(define (successive-merge ordered-pairs)
-  (define (sm remaining-pairs result)
-    (cond ((null? remaining-pairs) result)
-          ((null? result) (sm (cddr remaining-pairs)
-                              (make-code-tree (car remaining-pairs) (cadr remaining-pairs))))
-          (else (sm (cdr remaining-pairs)
-                    (make-code-tree (car remaining-pairs)
+(define (successive-merge ordered-leaves)
+  (define (sm remaining-leaves result)
+    (cond ((null? remaining-leaves) result)
+          ((null? result) (sm (cddr remaining-leaves)
+                              (make-code-tree (car remaining-leaves)
+                                              (cadr remaining-leaves))))
+          (else (sm (cdr remaining-leaves)
+                    (make-code-tree (car remaining-leaves)
                                     result)))))
-  (sm ordered-pairs nil))
+  (sm ordered-leaves nil))
 
+;;;;;;;;;;;;;
+;; Ex 2.70 ;;
+
+(define freq-song '((A 2)(BOOM 1)(GET 2)(JOB 2)(SHA 3)(NA 16)(WAH 1)(YIP 9)))
+
+(define song-tree (generate-huffman-tree freq-song))
+
+(define song '(GET A JOB SHA NA NA NA NA NA NA NA NA GET A JOB SHA NA NA NA NA NA NA NA NA WAH YIP YIP YIP YIP YIP YIP YIP YIP YIP SHA BOOM))
+
+;; > (length (encode song song-tree))
+;; $10 = 87
+
+;; If we use a fix-length code, we need 3 bits for 8 letters. Total is 36 - so
+;; 3x36 = 108 bits.
