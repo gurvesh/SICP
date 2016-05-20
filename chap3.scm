@@ -103,3 +103,5 @@
           (else (iter (- trials-remaining 1)
                       trials-passed))))
   (iter trials 0))
+
+(test)
