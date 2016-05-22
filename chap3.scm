@@ -77,12 +77,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (rand-update x)
-  (let ((a (expt 2 32))
-        (b 1103515245)
-        (m 12345))
+  (let ((a 16807)
+        (b 0)
+        (m (- (expt 2 31) 1)))
     (modulo (+ (* a x) b) m)))
 
-(define rand-init (rand-update 137))
+(define rand-init (rand-update 1))
 
 (define rand (let ((x rand-init))
                (lambda ()
@@ -103,3 +103,33 @@
           (else (iter (- trials-remaining 1)
                       trials-passed))))
   (iter trials 0))
+
+;;;;;;;;;;;;
+;; Ex 3.5 ;;
+
+(define (random-in-range low high)
+  (let ((range (- high low)))
+    (+ low (random range))))
+
+(define (estimate-integral pred
+                           lower_x1 upper_x2
+                           lower_y1 upper_y2
+                           trials)
+  (define (region-test)
+    (let ((x (random-in-range lower_x1 upper_x2))
+          (y (random-in-range lower_y1 upper_y2)))
+      (pred x y)))
+
+  (* (monte-carlo trials region-test)
+     (* (- upper_x2 lower_x1)
+        (- upper_y2 lower_y1))))
+
+(define (square x)
+  (* x x))
+
+(define (unit-circle-pred x y)
+  (>= 1 (+ (square x)
+           (square y))))
+
+(define (estimate-pi-integral trials)
+  (estimate-integral unit-circle-pred -1.0 1.0 -1.0 1.0 trials))
