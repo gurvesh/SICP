@@ -61,7 +61,7 @@
       (when (= previous-incorrect-attempts 7)
         (call-the-cops amount))
       (display "Incorrect Password")
-      (newline)) ;; Addition of #f is the only change required to make Ex 3.7 work
+      (newline))
     (define (dispatch password-entered m)
       (cond ((not (eq? password-entered password)) caught-a-fraud)
             ((eq? m 'withdraw) withdraw)
@@ -171,5 +171,6 @@
            (existing-ac existing-pw msg))
           (else (error "Unknown request: MAKE-JOINT" msg))))
   (when (number? ((existing-ac existing-pw 'deposit) 0))
-    ;; Only proceed if the "token" succeeds - which will be known if a number is returned.
+    ;; Only proceed if the token deposit succeeds - which will be known if a
+    ;; number is returned.
     dispatch))
