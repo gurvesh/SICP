@@ -61,7 +61,7 @@
       (when (= previous-incorrect-attempts 7)
         (call-the-cops amount))
       (display "Incorrect Password")
-      (newline))
+      (newline)) ;; Addition of #f is the only change required to make Ex 3.7 work
     (define (dispatch password-entered m)
       (cond ((not (eq? password-entered password)) caught-a-fraud)
             ((eq? m 'withdraw) withdraw)
@@ -112,24 +112,64 @@
     (+ low (random range))))
 
 (define (estimate-integral pred
-                           lower_x1 upper_x2
-                           lower_y1 upper_y2
+                           lower_x upper_x
+                           lower_y upper_y
                            trials)
   (define (region-test)
-    (let ((x (random-in-range lower_x1 upper_x2))
-          (y (random-in-range lower_y1 upper_y2)))
+    (let ((x (random-in-range lower_x upper_x))
+          (y (random-in-range lower_y upper_y)))
       (pred x y)))
 
   (* (monte-carlo trials region-test)
-     (* (- upper_x2 lower_x1)
-        (- upper_y2 lower_y1))))
-
-(define (square x)
-  (* x x))
+     (* (- upper_x lower_x)
+        (- upper_y lower_y))))
 
 (define (unit-circle-pred x y)
-  (>= 1 (+ (square x)
-           (square y))))
+  (>= 1 (+ (expt x 2)
+           (expt y 2))))
 
 (define (estimate-pi-integral trials)
-  (estimate-integral unit-circle-pred -1.0 1.0 -1.0 1.0 trials))
+  (estimate-integral unit-circle-pred
+                     -1.0 1.0
+                     -1.0 1.0
+                     trials))
+
+;;;;;;;;;;;;
+;; Ex 3.6 ;;
+
+(define rand2
+  (let ((x rand-init))
+    (define (generate-on-old-chain) ;; If we define it as a var, then set! will
+                                    ;; only get called the first time that var
+                                    ;; is accessed
+      (set! x (rand-update x))
+      x)
+    (define (seed-new seed)
+      (set! x (rand-update seed)))
+    (define (dispatch msg)
+      (cond ((eq? msg 'generate) (generate-on-old-chain)) ;; Note that we call
+                                                          ;; the function.
+            ((eq? msg 'reset) seed-new)
+            (else (error "Unknown message: RAND2" msg))))
+    dispatch))
+
+;;;;;;;;;;;;
+;; Ex 3.7 ;;
+
+(define (make-joint existing-ac
+                    existing-pw
+                    new-pw)
+  (define (dispatch password-entered msg)
+    (cond ((not (eq? password-entered new-pw))
+           (existing-ac "" 'withdraw)) ;; We make use of the existing
+                                       ;; fraud-detection, and pass it a dummy
+                                       ;; password. Note this stage can only
+                                       ;; occur after the joint-account is
+                                       ;; active
+          ((or (eq? msg 'withdraw)
+               (eq? msg 'deposit))
+           (existing-ac existing-pw msg))
+          (else (error "Unknown request: MAKE-JOINT" msg))))
+  (when (number? ((existing-ac existing-pw 'deposit) 0))
+    ;; Only proceed if the "token" succeeds - which will be known if a number is returned.
+    dispatch))
