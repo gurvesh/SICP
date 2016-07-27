@@ -108,7 +108,7 @@
 ;; Ex 3.5 ;;
 
 (define (random range)
-  (integer (* range (/ (rand)(- (expt 2 31) 1)))))
+  (round (* range (/ (rand)(- (expt 2 31) 1)))))
 
 (define (random-in-range low high)
   (let ((range (- high low)))
@@ -119,8 +119,12 @@
                            lower_y upper_y
                            trials)
   (define (region-test)
-    (let ((x (random-in-range lower_x upper_x))
-          (y (random-in-range lower_y upper_y)))
+    (let ((x (/ (random-in-range (* trials lower_x) 
+                                 (* trials upper_x))
+                trials))
+          (y (/ (random-in-range (* trials lower_y)
+                                 (* trials upper_y))
+                trials)))
       (pred x y)))
 
   (* (monte-carlo trials region-test)
@@ -177,3 +181,14 @@
     ;; Only proceed if the token deposit succeeds - which will be known if a
     ;; number is returned.
     dispatch))
+
+;;;;;;;;;;;;
+;; Ex 3.8 ;;
+
+(define f
+  (let ((counter -1))
+    (define (return-val x)
+      (begin
+        (set! counter (+ counter 1))
+        (if (even? counter) x 0)))
+    return-val))
