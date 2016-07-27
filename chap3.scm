@@ -119,7 +119,7 @@
                            lower_y upper_y
                            trials)
   (define (region-test)
-    (let ((x (/ (random-in-range (* trials lower_x) 
+    (let ((x (/ (random-in-range (* trials lower_x)
                                  (* trials upper_x))
                 trials))
           (y (/ (random-in-range (* trials lower_y)
@@ -191,3 +191,28 @@
       (begin
         (set! counter (+ counter 1))
         (if (even? counter) x 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Mutable List Structure ;;;;;;;
+
+(define (last-pair x)
+  (if (null? (cdr x))
+      x
+      (last-pair (cdr x))))
+
+(define (_append! x y)
+  (set-cdr! (last-pair x) y)
+  x)
+
+(define (make-cycle x)
+  (set-cdr! (last-pair x) x)
+  x)
+
+(define (mystery x)
+  (define (loop x y)
+    (if (null? x)
+        y
+        (let ((temp (cdr x)))
+          (set-cdr! x y)
+          (loop temp x))))
+  (loop x '()))
