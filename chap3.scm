@@ -187,8 +187,7 @@
 
 (define f
   (let ((counter -1))
-    (define (return-val x)
+    (lambda (x)
       (begin
         (set! counter (+ counter 1))
-        (if (even? counter) x 0)))
-    return-val))
+        (if (even? counter) x 0)))))
