@@ -254,6 +254,8 @@
 ;;;;;;;;;;;;;
 ;; Ex 3.18 ;;
 
+;; This is a constant space solution - but only works for a tail loop
+
 (define (check-cycle xs)
   (define (inf-cdr-check ys)
     (cond ((null? (cdr ys)) #f)
