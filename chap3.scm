@@ -254,6 +254,8 @@
 ;;;;;;;;;;;;;
 ;; Ex 3.18 ;;
 
+;; This is a constant space solution - but only works for a tail loop
+
 (define (check-cycle xs)
   (define (inf-cdr-check ys)
     (cond ((null? (cdr ys)) #f)
@@ -272,3 +274,43 @@
            (else (or (iter (car searchlist) (cons searchlist seen))
                      (iter (cdr searchlist) (cons searchlist seen))))))
    (iter lis '()))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Queues ;;;;;;;;;
+
+;; Select and modify front and rear pointers:
+
+(define (front-ptr queue) (car queue))
+(define (rear-ptr queue) (cdr queue))
+(define (set-front-ptr! queue item)
+  (set-car! queue item))
+(define (set-rear-ptr! queue item)
+  (set-cdr! queue item))
+
+;; First selector:
+
+(define (empty-queue? queue)
+  (null? (front-ptr queue)))
+
+;; Constructor:
+
+(define (make-queue)
+  (cons '() '()))
+
+;; Second selector:
+
+(define (front-queue queue)
+  (if (empty-queue? queue)
+      (error "FRONT called with an empty queue" queue)
+      (car (front-ptr queue))))
+
+(define (insert-queue! queue item)
+  (let ((new-pair (cons item '())))
+    (cond ((empty-queue? queue)
+           (set-front-ptr! queue new-pair)
+           (set-rear-ptr! queue new-pair)
+           queue)
+          (else
+           (set-cdr! (rear-ptr queue) new-pair)
+           (set-rear-ptr! queue new-pair)
+           queue))))
