@@ -216,3 +216,59 @@
           (set-cdr! x y)
           (loop temp x))))
   (loop x '()))
+
+;;;;;;;;;;;;;
+;; Ex 3.16 ;;
+
+(define (count-pairs x)
+  (if (not (pair? x))
+      0
+      (+ (count-pairs (car x))
+         (count-pairs (cdr x))
+         1)))
+
+;; (define z (list 'a 'b 'c))
+;; (count-pairs z)
+;;  3
+;; (set-car! (cdr z) (cddr z))
+;; (count-pairs z)
+;;  4
+;; z
+;;  (a (c) c)
+
+;;;;;;;;;;;;;
+;; Ex 3.17 ;;
+
+(define (correct-count-pairs xs)
+  (let ((pairs-traversed '()))
+    (define (count-pairs-helper xs)
+      (cond ((not (pair? xs)) 0)
+            ((memq xs pairs-traversed) 0)
+            (else (begin (set! pairs-traversed
+                               (cons xs pairs-traversed))
+                         (+ (count-pairs-helper (car xs))
+                            (count-pairs-helper (cdr xs))
+                            1)))))
+    (count-pairs-helper xs)))
+
+;;;;;;;;;;;;;
+;; Ex 3.18 ;;
+
+(define (check-cycle xs)
+  (define (inf-cdr-check ys)
+    (cond ((null? (cdr ys)) #f)
+          ((eq? (cdr ys) xs) #t)
+          (else (inf-cdr-check (cdr ys)))))
+  (inf-cdr-check xs))
+
+;; A more generic solution - that detects cycles not in the tail
+;; position as well.  See
+;; http://community.schemewiki.org/?sicp-ex-3.18
+
+(define (has-loop? lis)
+   (define (iter searchlist seen)
+     (cond ((not (pair? searchlist)) #f)
+           ((memq searchlist seen) #t)
+           (else (or (iter (car searchlist) (cons searchlist seen))
+                     (iter (cdr searchlist) (cons searchlist seen))))))
+   (iter lis '()))
