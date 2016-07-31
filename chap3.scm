@@ -287,22 +287,22 @@
 (define (set-rear-ptr! queue item)
   (set-cdr! queue item))
 
-;; First selector:
+;; Selectors:
 
 (define (empty-queue? queue)
   (null? (front-ptr queue)))
+
+(define (front-queue queue)
+  (if (empty-queue? queue)
+      (error "FRONT called with an empty queue" queue)
+      (car (front-ptr queue))))
 
 ;; Constructor:
 
 (define (make-queue)
   (cons '() '()))
 
-;; Second selector:
-
-(define (front-queue queue)
-  (if (empty-queue? queue)
-      (error "FRONT called with an empty queue" queue)
-      (car (front-ptr queue))))
+;; Modifiers:
 
 (define (insert-queue! queue item)
   (let ((new-pair (cons item '())))
@@ -314,3 +314,132 @@
            (set-cdr! (rear-ptr queue) new-pair)
            (set-rear-ptr! queue new-pair)
            queue))))
+
+(define (delete-queue! queue)
+  (cond ((empty-queue? queue)
+         (error "DELETE! called with an empty queue" queue))
+        (else (set-front-ptr! queue (cdr (front-ptr queue)))
+              queue)))
+
+;;;;;;;;;;;;;
+;; Ex 3.21 ;;
+
+(define (print-queue q)
+  (front-ptr q))
+
+;;;;;;;;;;;;;
+;; Ex 3.22 ;;
+
+(define (make-queue-state)
+  (let ((front-ptr '())
+        (rear-ptr '()))
+    (define (empty-queue?) (null? front-ptr))
+    (define (set-front-ptr! item) (set! front-ptr item))
+    (define (set-rear-ptr! item) (set! rear-ptr item))
+    (define (insert-queue! item)
+      (let ((new-pair (cons item '())))
+        (cond ((empty-queue?)
+               (set-front-ptr! new-pair)
+               (set-rear-ptr! new-pair)
+               front-ptr)
+              (else
+               (set-cdr! rear-ptr new-pair)
+               (set-rear-ptr! new-pair)
+               front-ptr))))
+    (define (delete-queue!)
+      (cond ((empty-queue?)
+             (error "DELETE! called with an empty queue"))
+            (else (set-front-ptr! (cdr front-ptr))
+                  front-ptr)))
+    (define (print-queue) front-ptr)
+    (define (front-queue)
+      (car front-ptr))
+
+    (define (dispatch m)
+      (cond ((eq? m 'empty-queue?) empty-queue?)
+            ((eq? m 'insert-queue!) insert-queue!)
+            ((eq? m 'delete-queue!) delete-queue!)
+            ((eq? m 'print-queue) print-queue)
+            (else (error "Unknown operation: QUEUE" m))))
+    dispatch))
+
+;;;;;;;;;;;;;
+;; Ex 3.23 ;;
+
+;; DEQUE -> Double ended queue The important part is to realise that now I need
+;; TWO pointers per data item (I couldn't realise this on my own). Usually there
+;; is one pointer, which points to the next item in the list. Now I need an
+;; additional one that also points to the previous item (if any). As I will
+;; maintain the rear-ptr at all times, so its not that hard. The rear-ptr now
+;; will contain a reference to the previous items too.
+
+;; So my data representation should be (item . ptr-prev . ptr-next)
+
+(define (make-deque) (cons '() '()))
+
+;; I'll use the front-ptr and rear-ptr functions from the queue representation.
+;; But the rear-ptr now will be a list.
+
+(define empty-deque? empty-queue?) ;; Reuse queue fn
+
+(define (front-insert-deque! deque item)
+  (let ((new-triple (cons item (cons '() '()))))
+    (cond ((empty-deque? deque)
+           (set-front-ptr! deque new-triple)
+           (set-rear-ptr! deque new-triple))
+          (else
+           ;; First set the ptr-next of the new triple to the item already at the front
+           (set-cdr! (cdr new-triple) (front-ptr deque))
+
+           ;; Next set the ptr-prev of the old item at the front, to the new item
+           ;; The ptr to be changed is the 2nd item in old queue
+           (set-car! (cdr (front-ptr deque)) new-triple)
+
+           ;; Finally set the front-ptr of the deque to the new item
+           (set-front-ptr! deque new-triple)))))
+
+(define (rear-insert-deque! deque item)
+  (let ((new-triple (cons item (cons  '() '()))))
+    (cond ((empty-deque? deque)
+           (set-front-ptr! deque new-triple)
+           (set-rear-ptr! deque new-triple))
+          (else
+           ;; First set the ptr-next of the item already at the end to the new item
+           (set-cdr! (cdr (rear-ptr deque)) new-triple)
+
+           ;; Next set the ptr-prev of the new item to the item which was at the end already
+           (set-car! (cdr new-triple) (rear-ptr deque))
+
+           ;; Finally set the rear-ptr of the deque to the new item
+           (set-rear-ptr! deque new-triple)))))
+
+(define (front-delete-deque! deque)
+  (cond ((empty-deque? deque)
+         (error ("Trying to delete an empty Deque" deque)))
+        (else
+         ;; I use cddr because the ptr-next is the 3rd item in my rep
+         (set-front-ptr! deque (cddr (front-ptr deque)))
+         (or (empty-deque? deque) ;; Do nothing
+             (set-car! (cdr (front-ptr deque)) '())))))
+
+(define (rear-delete-deque! deque)
+  (cond ((empty-deque? deque)
+         (error ("Trying to delete an empty Deque" deque)))
+        (else
+         (set-rear-ptr! deque (cadr (rear-ptr deque)))
+         (if (null? (rear-ptr deque)) ;; Unlike front-delete, now we don't know
+                                      ;; directly if the queue is empty
+             (set-front-ptr! deque '()) ;; If nothing left on rear-ptr, then
+                                        ;; return an empty deque. Weirdly -
+                                        ;; (set! deque (make-deque)) doesn't
+                                        ;; work
+             (set-cdr! (cdr (rear-ptr deque)) '())))))
+
+;; Print-deque has to be an O(n) task.
+(define (print-deque deque)
+  (define (iter-print front result)
+    (if (null? front)
+        result
+        (iter-print (cddr front)
+                    (append result (list (car front))))))
+  (iter-print (front-ptr deque) '()))
