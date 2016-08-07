@@ -618,3 +618,77 @@
             ((eq? m 'insert!) insert!)
             (else (error "Unknown operation: TABLE" m))))
     dispatch))
+
+;;;;;;;;;;;;;
+;; Ex 3.26 ;;
+
+(define tab-bin '())
+
+(define (entry tree) (car tree))
+(define (left-branch tree) (cadr tree))
+(define (right-branch tree) (caddr tree))
+
+(define (make-tree key-val-pair left right)
+  (list key-val-pair left right))
+
+(define (adjoin-set key-val-pair existing-records)
+  (cond ((null? existing-records) (make-tree key-val-pair '()'()))
+        ((= (car key-val-pair) (car (entry existing-records)))
+         (set-cdr! (entry existing-records) (cdr key-val-pair)))
+        ((< (car key-val-pair) (car (entry existing-records)))
+         (make-tree (entry existing-records)
+                    (adjoin-set key-val-pair (left-branch existing-records))
+                    (right-branch existing-records)))
+        ((> (car key-val-pair) (car (entry existing-records)))
+         (make-tree (entry existing-records)
+                    (left-branch existing-records)
+                    (adjoin-set key-val-pair (right-branch existing-records))))))
+
+(define (assoc-bin key records)
+  (cond ((null? records) #f)
+        ((= key (car (entry records))) (entry records))
+        ((< key (car (entry records))) (assoc-bin key (left-branch records)))
+        ((> key (car (entry records))) (assoc-bin key (right-branch records)))))
+
+(define (make-table-bin)
+  (let ((tab-bin '()))
+    (define (lookup-bin key)
+      (let ((record (assoc-bin key tab-bin)))
+        (if record
+            (cdr record)
+            #f)))
+    (define (insert-bin! key val)
+      (let ((record (assoc-bin key tab-bin)))
+        (if record
+            (set-cdr! record val)
+            (set! tab-bin (adjoin-set (cons key val)
+                                      tab-bin)))))
+    (define (print)
+      (display tab-bin) (newline))
+    (define (dispatch m)
+      (cond ((eq? m 'lookup) lookup-bin)
+            ((eq? m 'insert!) insert-bin!)
+            ((eq? m 'print) (print))
+            (else (error "Unknown operation - BINARY TABLE" m))))
+    dispatch))
+
+;;;;;;;;;;;;;
+;; Ex 3.27 ;;
+
+(define (memoize f)
+  (let ((table (make-table)))
+    (lambda (x)
+      (let ((previously-computed-result
+             (lookup x table)))
+        (or previously-computed-result
+            (let ((result (f x)))
+              (insert! x  result table)
+              result))))))
+
+(define memo-fib
+  (memoize
+   (lambda (n)
+     (cond ((= n 0) 0)
+           ((= n 1) 1)
+           (else (+ (memo-fib (- n 1))
+                    (memo-fib (- n 2))))))))
