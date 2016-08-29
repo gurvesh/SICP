@@ -1012,7 +1012,7 @@
                     (= 0 (get-value m1)))
                (and (has-value? m2)
                     (= 0 (get-value m2))))
-           (set-value! product 0 me)) 
+           (set-value! product 0 me))
           ((and (has-value? m1) (has-value? m2))
            (set-value! product
                        (* (get-value m1)
@@ -1080,3 +1080,81 @@
           (else (error "Unknown request: PROBE" request))))
   (connect connector me)
   me)
+
+;;;;;;;;;;;;;
+;; Ex 3.33 ;;
+
+(define (averager conn-a conn-b conn-c)
+  (let ((x (make-connector))
+        (y (make-connector)))
+    (adder conn-a conn-b x)
+    (constant 2 y)
+    (multiplier y conn-c x)))
+
+;;;;;;;;;;;;;
+;; Ex 3.34 ;;
+
+(define (squarer a b)
+  (multiplier a a b))
+
+;; It doesn't work to get square-root. Remember, both product and one multiplier must be known.
+
+;;;;;;;;;;;;;
+;; Ex 3.35 ;;
+
+(define (squarer a b)
+  (define (process-new-value)
+    (if (has-value? b)
+        (if (< (get-value b) 0)
+            (error "square less than 0: SQUARER"
+                   (get-value b))
+            (set-value! a (sqrt (get-value b)) me))
+        (if (has-value? a)
+            (set-value! b (* (get-value a)
+                             (get-value a))
+                        me))))
+  (define (process-forget-value)
+    (forget-value! b me)
+    (forget-value! a me)
+    (process-new-value))
+  (define (me request)
+    (cond ((eq? request 'I-have-a-value) (process-new-value))
+          ((eq? request 'I-lost-my-value) (process-forget-value))
+          (else (error "Unknown request: SQUARER" request))))
+  (connect a me)
+  (connect b me)
+  me)
+
+;;;;;;;;;;;;;
+;; Ex 3.36 ;;
+
+(define (c+ x y)
+  (let ((z (make-connector)))
+    (adder x y z)
+    z))
+
+(define (c- z x)
+  (let ((y (make-connector)))
+    (adder x y z)
+    y))
+
+(define (c* x y)
+  (let ((z (make-connector)))
+    (multiplier x y z)
+    z))
+
+(define (c/ z x)
+  (let ((y (make-connector)))
+    (multiplier x y z)
+    y))
+
+(define (cv val)
+  (let ((x (make-connector)))
+    (constant val x)
+    x))
+
+(define (c-f-converter x)
+  (c+ (c* (c/ (cv 9)
+              (cv 5))
+          x)
+      (cv 32)))
