@@ -1158,3 +1158,150 @@
               (cv 5))
           x)
       (cv 32)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Concurrency ;;;;;;;;;;;
+
+;; I use a different order than the one introduced by the book.
+
+(define (make-serializer)
+  (let ((mutex (make-mutex)))
+    (lambda (p)
+      (define (serialized-p . args)
+        (mutex 'acquire)
+        (let ((val (apply p args)))
+          (mutex 'release)
+          val))
+      serialized-p)))
+
+(define (make-mutex)
+  (let ((cell (list #f)))
+    (define (the-mutex m)
+      (cond ((eq? m 'acquire) (if (test-and-set! cell)
+                                  (the-mutex 'acquire))) ;; We wait, otherwise proceed
+            ((eq? m 'release) (clear! cell))))
+    the-mutex))
+
+(define (clear! cell) (set-car! cell #f))
+
+(define (test-and-set! cell)
+  (without-interrupts
+   (lambda ()
+     (if (car cell)
+         #t
+         (begin (set-car! cell #t)
+                #f)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The following code comes from the help site of the book ;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; To allow parallel execution of any number of thunks, for
+;;; effect.  The values are discarded.
+
+(define disallow-preempt-current-thread
+  (access disallow-preempt-current-thread
+          (->environment '(runtime thread))))
+
+(define allow-preempt-current-thread
+  (access allow-preempt-current-thread
+          (->environment '(runtime thread))))
+
+(define (kill-thread thread)
+  (let ((event
+         (lambda ()
+           (exit-current-thread 'RIP))))
+    (without-interrupts
+     (lambda ()
+       (case (thread-execution-state thread)
+         ((STOPPED) (restart-thread thread #t event))
+         ((DEAD) unspecific)
+         (else (signal-thread-event thread event)))))))
+
+(define (parallel-execute . thunks)
+  (let ((my-threads '()))
+    (define (terminator)
+      (without-interrupts
+       (lambda ()
+         (for-each kill-thread my-threads)
+         (set! my-threads '())
+         unspecific)))
+    (without-interrupts
+     (lambda ()
+       (set! my-threads
+         (map (lambda (thunk)
+                (let ((thread (create-thread #f thunk)))
+                  (detach-thread thread)
+                  thread))
+              thunks))
+       unspecific))
+    terminator))
+
+(define (make-serializer-special)
+  (let ((mutex (make-thread-mutex)))
+    (define (serialized f)
+      (define (serialized-f . args)
+        (with-thread-mutex-locked mutex
+                                  (lambda ()
+                                    (apply f args))))
+      serialized-f)
+    serialized))
+
+(define output-serialized (make-serializer-special))
+
+(define write-line
+  (output-serialized write-line))
+
+(define display
+  (output-serialized display))
+
+(define write
+  (output-serialized write))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (make-concurrent-account balance)
+  (define (withdraw amount)
+    (if (>= balance amount)
+        (begin (set! balance (- balance amount))
+               balance)
+        "Insufficient funds"))
+  (define (deposit amount)
+    (set! balance (+ balance amount))
+    balance)
+  (let ((protected (make-serializer)))
+    (define (dispatch m)
+      (cond ((eq? m 'withdraw) (protected withdraw))
+            ((eq? m 'deposit) (protected deposit))
+            ((eq? m 'balance) balance)
+            (else (error "Unknown request: MAKE-PROTECTED-ACCOUNT" m))))
+    dispatch))
+
+;;;;;;;;;;;;;
+;; Ex 3.47 ;;
+
+;; Semaphores ;;
+
+;; This one was a bit tough. I couldn't do it. I was going in the wrong
+;; direction using multiple mutexes. Finally the following is the first reply
+;; from schemewiki. Took me a bit of time to understand, but its pretty elegant.
+
+(define (make-semaphore max-size)
+  (let ((lock (make-mutex))
+        (taken 0))
+    (define (semaphore command)
+      (cond ((eq? command 'acquire)
+             (lock 'acquire)
+             (if (< taken max-size)
+                 (begin (set! taken (+ taken 1))
+                        (lock 'release))
+                 (begin (lock 'release)
+                        (semaphore 'acquire))))
+            ((eq? command 'release)
+             (lock 'acquire)
+             (set! taken (- taken 1))
+             (lock 'release))))
+    semaphore))
