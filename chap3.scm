@@ -1191,6 +1191,25 @@
          (begin (set-car! cell #t)
                 #f)))))
 
+;; Here is some multi-threaded code to test a mutex:
+#|
+
+(define mt (make-mutex))
+(mt 'acquire)
+
+Next we create a new thread:
+
+(create-thread #f (lambda ()
+                    (mt 'acquire)
+                    (display "This thread finished")
+                    (newline)
+                    (mt 'release)))
+
+The above code will not run until the mutex is released
+(mt 'release)
+
+|#
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The following code comes from the help site of the book ;;;
@@ -1305,3 +1324,30 @@
              (set! taken (- taken 1))
              (lock 'release))))
     semaphore))
+
+#|
+
+(define sp (make-semaphore 3))
+(sp 'acquire)
+(sp 'acquire)
+(sp 'acquire)
+
+Next we create a 2 new threads:
+
+(create-thread #f (lambda ()
+                    (sp 'acquire)
+                    (display "This thread #1 finished")
+                    (newline)
+                    (sp 'release)))
+
+(create-thread #f (lambda ()
+                    (sp 'acquire)
+                    (display "This thread #2 finished")
+                    (newline)
+                    (sp 'release)))
+
+The above code will not run until the semaphore is released
+(sp 'release)
+(sp 'release)
+
+|#
