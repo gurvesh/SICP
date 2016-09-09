@@ -1325,29 +1325,56 @@ The above code will not run until the mutex is released
              (lock 'release))))
     semaphore))
 
-#|
 
-(define sp (make-semaphore 3))
-(sp 'acquire)
-(sp 'acquire)
-(sp 'acquire)
+;; (define sp (make-semaphore 3))
+;; (sp 'acquire)
+;; (sp 'acquire)
+;; (sp 'acquire)
 
-Next we create a 2 new threads:
+;; Next we create a 2 new threads:
 
-(create-thread #f (lambda ()
-                    (sp 'acquire)
-                    (display "This thread #1 finished")
-                    (newline)
-                    (sp 'release)))
+;; (create-thread #f (lambda ()
+;;                     (sp 'acquire)
+;;                     (display "This thread #1 finished")
+;;                     (newline)
+;;                     (sp 'release)))
 
-(create-thread #f (lambda ()
-                    (sp 'acquire)
-                    (display "This thread #2 finished")
-                    (newline)
-                    (sp 'release)))
+;; (create-thread #f (lambda ()
+;;                     (sp 'acquire)
+;;                     (display "This thread #2 finished")
+;;                     (newline)
+;;                     (sp 'release)))
 
-The above code will not run until the semaphore is released
-(sp 'release)
-(sp 'release)
+;; The above code will not run until the semaphore is released
+;; (sp 'release)
+;; (sp 'release)
 
-|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Streams ;;
+
+;; First we re-implement primes ;;
+
+(define (smallest-divisor n) (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (+ test-divisor 1)))))
+(define (divides? a b) (= (remainder b a) 0))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+(define (square x) (* x x))
+
+;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
+
+(define (sum-primes a b)
+  (define (iter count accum)
+    (cond ((> count b) accum)
+          ((prime? count)
+           (iter (+ count 1) (+ count accum)))
+          (else (iter (+ count 1) accum))))
+  (iter a 0))
+
