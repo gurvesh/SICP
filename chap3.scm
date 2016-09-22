@@ -59,7 +59,7 @@
     (define (caught-a-fraud amount)
       (set! previous-incorrect-attempts (+ 1 previous-incorrect-attempts))
       (when (= previous-incorrect-attempts 7)
-        (call-the-cops amount))
+            (call-the-cops amount))
       (display "Incorrect Password")
       (newline))
     (define (dispatch password-entered m)
@@ -147,15 +147,15 @@
 (define rand2
   (let ((x rand-init))
     (define (generate-on-old-chain) ;; If we define it as a var, then set! will
-                                    ;; only get called the first time that var
-                                    ;; is accessed
+      ;; only get called the first time that var
+      ;; is accessed
       (set! x (rand-update x))
       x)
     (define (seed-new seed)
       (set! x (rand-update seed)))
     (define (dispatch msg)
       (cond ((eq? msg 'generate) (generate-on-old-chain)) ;; Note that we call
-                                                          ;; the function.
+            ;; the function.
             ((eq? msg 'reset) seed-new)
             (else (error "Unknown message: RAND2" msg))))
     dispatch))
@@ -169,18 +169,18 @@
   (define (dispatch password-entered msg)
     (cond ((not (eq? password-entered new-pw))
            (existing-ac "" 'withdraw)) ;; We make use of the existing
-                                       ;; fraud-detection, and pass it a dummy
-                                       ;; password. Note this stage can only
-                                       ;; occur after the joint-account is
-                                       ;; active
+          ;; fraud-detection, and pass it a dummy
+          ;; password. Note this stage can only
+          ;; occur after the joint-account is
+          ;; active
           ((or (eq? msg 'withdraw)
                (eq? msg 'deposit))
            (existing-ac existing-pw msg))
           (else (error "Unknown request: MAKE-JOINT" msg))))
   (when (number? ((existing-ac existing-pw 'deposit) 0))
-    ;; Only proceed if the token deposit succeeds - which will be known if a
-    ;; number is returned.
-    dispatch))
+        ;; Only proceed if the token deposit succeeds - which will be known if a
+        ;; number is returned.
+        dispatch))
 
 ;;;;;;;;;;;;
 ;; Ex 3.8 ;;
@@ -268,12 +268,12 @@
 ;; http://community.schemewiki.org/?sicp-ex-3.18
 
 (define (has-loop? lis)
-   (define (iter searchlist seen)
-     (cond ((not (pair? searchlist)) #f)
-           ((memq searchlist seen) #t)
-           (else (or (iter (car searchlist) (cons searchlist seen))
-                     (iter (cdr searchlist) (cons searchlist seen))))))
-   (iter lis '()))
+  (define (iter searchlist seen)
+    (cond ((not (pair? searchlist)) #f)
+          ((memq searchlist seen) #t)
+          (else (or (iter (car searchlist) (cons searchlist seen))
+                    (iter (cdr searchlist) (cons searchlist seen))))))
+  (iter lis '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Queues ;;;;;;;;;
@@ -428,11 +428,11 @@
         (else
          (set-rear-ptr! deque (cadr (rear-ptr deque)))
          (if (null? (rear-ptr deque)) ;; Unlike front-delete, now we don't know
-                                      ;; directly if the queue is empty
+             ;; directly if the queue is empty
              (set-front-ptr! deque '()) ;; If nothing left on rear-ptr, then
-                                        ;; return an empty deque. Weirdly -
-                                        ;; (set! deque (make-deque)) doesn't
-                                        ;; work
+             ;; return an empty deque. Weirdly -
+             ;; (set! deque (make-deque)) doesn't
+             ;; work
              (set-cdr! (cdr (rear-ptr deque)) '())))))
 
 ;; Print-deque has to be an O(n) task.
@@ -804,7 +804,7 @@
           'done))
     (define (accept-action-procedure! proc)
       (set! action-procedures
-        (cons proc action-procedures))
+            (cons proc action-procedures))
       (proc))
     (define (dispatch m)
       (cond ((eq? m 'get-signal) signal-value)
@@ -1249,11 +1249,11 @@ The above code will not run until the mutex is released
     (without-interrupts
      (lambda ()
        (set! my-threads
-         (map (lambda (thunk)
-                (let ((thread (create-thread #f thunk)))
-                  (detach-thread thread)
-                  thread))
-              thunks))
+             (map (lambda (thunk)
+                    (let ((thread (create-thread #f thunk)))
+                      (detach-thread thread)
+                      thread))
+                  thunks))
        unspecific))
     terminator))
 
@@ -1385,19 +1385,19 @@ The above code will not run until the mutex is released
   (if (= n 0)
       (stream-car s)
       (stream-ref (stream-cdr s)
-		  (- n 1))))
+                  (- n 1))))
 
 (define (stream-map proc s)
   (if (stream-null? s)
       the-empty-stream
       (cons-stream (proc (stream-car s))
-		   (stream-map proc (stream-cdr s)))))
+                   (stream-map proc (stream-cdr s)))))
 
 (define (stream-for-each proc s)
   (if (stream-null? s)
       'done
       (begin (proc (stream-car s))
-	     (stream-for-each proc (stream-cdr s)))))
+             (stream-for-each proc (stream-cdr s)))))
 
 (define (display-stream s)
   (stream-for-each display-line s))
@@ -1410,15 +1410,15 @@ The above code will not run until the mutex is released
   (if (> low high)
       the-empty-stream
       (cons-stream low
-		   (stream-range (+ low 1) high))))
+                   (stream-range (+ low 1) high))))
 
 (define (stream-filter pred stream)
   (cond ((stream-null? stream) the-empty-stream)
-	((pred (stream-car stream))
-	 (cons-stream (stream-car stream)
-		      (stream-filter pred
-				     (stream-cdr stream))))
-	(else (stream-filter pred (stream-cdr stream)))))
+        ((pred (stream-car stream))
+         (cons-stream (stream-car stream)
+                      (stream-filter pred
+                                     (stream-cdr stream))))
+        (else (stream-filter pred (stream-cdr stream)))))
 
 ;;;
 (define (range low high)
@@ -1429,17 +1429,17 @@ The above code will not run until the mutex is released
 
 (define (memo-proc proc)
   (let ((already-run? #f)
-	(result #f))
+        (result #f))
     (lambda ()
       (if (not already-run?)
-	  (begin (set! result (proc))
-		 (set! already-run? #t)
-		 result)
-	  result))))
+          (begin (set! result (proc))
+                 (set! already-run? #t)
+                 result)
+          result))))
 
 (define (delay proc)
   (memo-proc (lambda ()
-	       proc)))
+               proc)))
 
 (define (force delayed-object)
   (delayed-object))
@@ -1461,3 +1461,157 @@ The above code will not run until the mutex is released
   (display-line x)
   x)
 
+(define (range-from n)
+  (cons-stream n (range-from (+ n 1))))
+(define integers (range-from 1))
+
+(define (fibgen a b)
+  (cons-stream a (fibgen b (+ a b))))
+(define fibs (fibgen 0 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Sieve of Eratosthenes ;;;
+
+(define (sieve stream)
+  (cons-stream
+   (stream-car stream)
+   (sieve (stream-filter
+           (lambda (x)
+             (not (divisible? x (stream-car stream))))
+           (stream-cdr stream)))))
+
+(define primes (sieve (range-from 2)))
+
+(define (divisible? x y) (= 0 (remainder x y)))
+
+(define ones (cons-stream 1 ones))
+
+(define (add-streams s1 s2) (stream-map + s1 s2))
+
+(define _integers (cons-stream 1 (add-streams ones _integers)))
+
+(define _fibs
+  (cons-stream
+   0
+   (cons-stream 1 (add-streams (stream-cdr _fibs) _fibs))))
+
+(define (scale-stream stream factor)
+  (stream-map (lambda (x) (* x factor))
+              stream))
+
+(define _primes
+  (cons-stream
+   2
+   (stream-filter _prime? (range-from 3))))
+
+(define (_prime? n)
+  (define (iter ps)
+    (cond ((> (square (stream-car ps)) n) true)
+          ((divisible? n (stream-car ps)) false)
+          (else (iter (stream-cdr ps)))))
+  (iter _primes))
+
+;;;;;;;;;;;;;
+;; Ex 3.54 ;;
+
+(define (mul-streams s1 s2)
+  (stream-map * s1 s2))
+
+(define _factorials
+  (cons-stream 1 (mul-streams _factorials
+                              (range-from 2))))
+
+;;;;;;;;;;;;;
+;; Ex 3.55 ;;
+
+(define (partial-sums s)
+  (cons-stream
+   (stream-car s)
+   (add-streams (partial-sums s)
+                (stream-cdr s))))
+
+;;;;;;;;;;;;;
+;; Ex 3.56 ;;
+
+(define (merge s1 s2)
+  (cond ((stream-null? s1) s2)
+        ((stream-null? s2) s1)
+        (else
+         (let ((s1car (stream-car s1))
+               (s2car (stream-car s2)))
+           (cond ((< s1car s2car)
+                  (cons-stream
+                   s1car
+                   (merge (stream-cdr s1) s2)))
+                 ((> s1car s2car)
+                  (cons-stream
+                   s2car
+                   (merge s1 (stream-cdr s2))))
+                 (else
+                  (cons-stream
+                   s1car
+                   (merge (stream-cdr s1)
+                          (stream-cdr s2)))))))))
+
+(define hamming
+  (cons-stream
+   1
+   (merge (scale-stream hamming 5)
+          (merge (scale-stream hamming 3)
+                 (scale-stream hamming 2)))))
+
+;;;;;;;;;;;;;
+;; Ex 3.58 ;;
+
+(define (expand num den radix)
+  (cons-stream
+   (quotient (* num radix)
+             den)
+   (expand (remainder (* num radix)
+                      den)
+           den radix)))
+
+;;;;;;;;;;;;;
+;; Ex 3.59 ;;
+
+(define (integrate-series as)
+  (mul-streams as
+               (stream-map
+                (lambda (x) (/ 1 x))
+                integers)))
+
+(define exp-series
+  (cons-stream 1 (integrate-series exp-series)))
+
+;; (+ 0.0 (stream-ref (partial-sums exp-series) 100)) -> gives e !! mind-bending!!
+
+(define sine-series
+  (cons-stream 0 (integrate-series cosine-series)))
+
+(define cosine-series
+  (cons-stream 1 (scale-stream (integrate-series sine-series)
+                               -1)))
+
+(define (powers x)
+  (cons-stream 1 (scale-stream (powers x) x)))
+
+(define (_exp x num-terms)
+  (+ 0.0
+     (stream-ref
+      (partial-sums (mul-streams exp-series
+                                 (powers x)))
+      num-terms)))
+
+(define (_sin x num-terms)
+  (+ 0.0
+     (stream-ref
+      (partial-sums (mul-streams sine-series
+                                 (powers x)))
+      num-terms)))
+
+(define (_cos x num-terms)
+  (+ 0.0
+     (stream-ref
+      (partial-sums (mul-streams cosine-series
+                                 (powers x)))
+      num-terms)))
