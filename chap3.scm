@@ -1530,6 +1530,13 @@ The above code will not run until the mutex is released
    (add-streams (partial-sums s)
                 (stream-cdr s))))
 
+;; After going through Ex 3.63, we can create a faster partial-sums function.
+
+(define (partial-sums s)
+  (define psums
+    (add-streams s (cons-stream 0 psums)))
+  psums)
+
 ;;;;;;;;;;;;;
 ;; Ex 3.56 ;;
 
@@ -1576,9 +1583,7 @@ The above code will not run until the mutex is released
 
 (define (integrate-series as)
   (mul-streams as
-               (stream-map
-                (lambda (x) (/ 1 x))
-                integers)))
+               (stream-map / ones integers)))
 
 (define exp-series
   (cons-stream 1 (integrate-series exp-series)))
@@ -1615,3 +1620,157 @@ The above code will not run until the mutex is released
       (partial-sums (mul-streams cosine-series
                                  (powers x)))
       num-terms)))
+
+
+;;;;;;;;;;;;;
+;; Ex 3.60 ;;
+
+;; First write down 2 series as (a1 a2 a3 a4 ...) and (b1 b2 b3 b4 ...). Keep in
+;; mind these are coefficients of x. Now observe that on multiplying these
+;; series, we get a series that looks like: [a1b1 (a1b2+a2b1) (a1b3+a2b2+a3b1)
+;; (a1b4+a2b3+a3b2+a4b1) ...]
+
+
+(define (mul-series s1 s2)
+  (cons-stream (* (stream-car s1) (stream-car s2))
+               (add-streams
+                (scale-stream (stream-cdr s2) (stream-car s1))
+                (mul-series (stream-cdr s1) s2))))
+
+(define (test-mul-series num-terms)
+  (= 1 (stream-ref
+        (partial-sums (add-streams
+                       (mul-series sine-series sine-series)
+                       (mul-series cosine-series cosine-series)))
+        num-terms)))
+
+;;;;;;;;;;;;;
+;; Ex 3.61 ;;
+
+(define (invert-unit-series s)
+  (cons-stream 1 (scale-stream (mul-series (stream-cdr s)
+                                           (invert-unit-series s))
+                               -1)))
+
+;; (define inv-cos (invert-unit-series cosine-series))
+
+;; (+ 0.0 (stream-ref (partial-sums (mul-series inv-cos cosine-series)) 3)) ->
+;; gives 1. for any number you can put in
+
+;;;;;;;;;;;;;
+;; Ex 3.62 ;;
+
+(define (invert-series s)
+  (let ((factor (stream-car s)))
+    (if (= 0 factor)
+        (error "INVERT-SERIES: should have non-zero constant")
+        (scale-stream (invert-unit-series (scale-stream s (/ 1 factor)))
+                      factor))))
+
+(define (div-series num-series denom-series)
+  (mul-series num-series (invert-series denom-series)))
+
+(define tan-series
+  (div-series sine-series cosine-series))
+
+(define (_tan x num-terms)
+  (+ 0.0
+     (stream-ref
+      (partial-sums (mul-streams tan-series
+                                 (powers x)))
+      num-terms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (sqrt-improve guess x)
+  (average guess (/ x guess)))
+
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream
+     1.0
+     (stream-map (lambda (guess)
+                   (sqrt-improve guess x))
+                 guesses)))
+  guesses)
+
+(define (average x1 x2)
+  (/ (+ x1 x2)
+     2.0))
+
+(define (display-stream-to s num-terms)
+  (for-each (lambda (n)
+              (display-line (stream-ref s n)))
+            (range 1 num-terms)))
+
+(define (pi-summands n)
+  (cons-stream (/ 1.0 n)
+               (stream-map - (pi-summands (+ n 2)))))
+
+(define pi-stream
+  (scale-stream (partial-sums (pi-summands 1)) 4))
+
+(define (euler-transform s)
+  (let ((s0 (stream-ref s 0))
+        (s1 (stream-ref s 1))
+        (s2 (stream-ref s 2)))
+    (cons-stream (- s2 (/ (square (- s2 s1))
+                          (+ s0 (* -2 s1) s2)))
+                 (euler-transform (stream-cdr s)))))
+
+(define (make-tableu transform s)
+  (cons-stream s (make-tableu transform (transform s))))
+
+(define (accelerated-sequence transform s)
+  (stream-map stream-car (make-tableu transform s)))
+
+
+;;;;;;;;;;;;;
+;; Ex 3.63 ;;
+
+;; Everytime a function is run, a new frame is created for that function.
+;; Effectively that's a new object. So the interpreter has no way of knowing
+;; that this "new" object is the same as another object that has already been
+;; run. Keep in mind that the delay memoization is based on the calling this
+;; function through another function, such as (stream-cdr (sqrt-stream x)). Here
+;; stream-cdr calls a new object.
+
+;; To get over this, we create a local object called guesses. Now whenever
+;; stream-cdr (or repeated stream-cdrs) are run on this object, the memoization
+;; sees that its the same object.
+
+;;;;;;;;;;;;;;
+;; Ex  3.64 ;;
+
+(define (stream-limit stream tolerance)
+  (if (> tolerance (abs (- (stream-car stream)
+                           (stream-ref stream 1))))
+      (stream-ref stream 1)
+      (stream-limit (stream-cdr stream) tolerance)))
+
+(define (_sqrt x tolerance)
+  (stream-limit (sqrt-stream x) tolerance))
+
+;;;;;;;;;;;;;
+;; Ex 3.65 ;;
+
+(define (ln2-summands n)
+  (cons-stream (/ 1.0 n)
+               (stream-map - (ln2-summands (+ n 1)))))
+
+(define ln2-stream
+  (partial-sums (ln2-summands 1)))
+
+;; => (display-stream-to (accelerated-sequence euler-transform ln2-stream) 10)
+
+;; .7
+;; .6932773109243697
+;; .6931488693329254
+;; .6931471960735491
+;; .6931471806635636
+;; .6931471805604039
+;; .6931471805599445
+;; .6931471805599427
+;; .6931471805599454
+;;                                         ;Invalid floating-point operation
