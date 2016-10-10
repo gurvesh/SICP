@@ -1702,7 +1702,7 @@ The above code will not run until the mutex is released
 (define (display-stream-to s num-terms)
   (for-each (lambda (n)
               (display-line (stream-ref s n)))
-            (range 1 num-terms)))
+            (range 0 (- num-terms 1))))
 
 (define (pi-summands n)
   (cons-stream (/ 1.0 n)
@@ -1740,6 +1740,9 @@ The above code will not run until the mutex is released
 ;; stream-cdr (or repeated stream-cdrs) are run on this object, the memoization
 ;; sees that its the same object.
 
+;; Moral -> Be careful when using memoization with functions. This is why in
+;; Clojure we redefine the memoized function as another var, not a fn.
+
 ;;;;;;;;;;;;;;
 ;; Ex  3.64 ;;
 
@@ -1774,3 +1777,232 @@ The above code will not run until the mutex is released
 ;; .6931471805599427
 ;; .6931471805599454
 ;;                                         ;Invalid floating-point operation
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Infinite Pairs ;;;;;;;
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x))
+                (stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))
+
+(define (interleave s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (interleave s2 (stream-cdr s1)))))
+
+;;;;;;;;;;;;;
+;; Ex 3.67 ;;
+
+(define (all-pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave (interleave (stream-map (lambda (x) (list (stream-car s) x))
+                                       (stream-cdr t))
+                           (all-pairs (stream-cdr s) (stream-cdr t)))
+               (stream-map (lambda (x) (list x (stream-car t)))
+                           (stream-cdr s)))))
+
+;;;;;;;;;;;;;
+;; Ex 3.68 ;;
+
+;; Lousy Reasoner's program:
+
+(define (lousy-pairs s t)
+  (interleave
+   (stream-map (lambda (x) (list (stream-car s) x))
+               t)
+   (lousy-pairs (stream-cdr s) (stream-cdr t))))
+
+;; This goes to infinite recursion. Coming from Clojure - I should have seen
+;; this, but I didn't. As the lousy-pairs are not initiated using cons-stream,
+;; there is no delay in the 2nd stream, forcing the interpreter to generate it
+;; immediately.
+
+;; Moral -> Always generate inifinite streams with cons-stream
+
+;;;;;;;;;;;;;
+;; Ex 3.69 ;;
+
+(define (triples s t u)
+  (cons-stream
+   (list (stream-car s) (stream-car t) (stream-car u))
+   (interleave (stream-map (lambda (existing-pair)
+                             (cons (stream-car s) existing-pair))
+                           (stream-cdr (pairs t u)))  ;; This step is tricky. We
+                                                      ;; need all the pairs
+                                                      ;; except the first one.
+               (triples (stream-cdr s) (stream-cdr t) (stream-cdr u)))))
+
+(define (pythagorean-triples)
+  (define (square x) (* x x))
+  (define all-triples (triples integers integers integers))
+  (stream-filter (lambda (triple)
+                   (= (square (caddr triple))
+                      (+ (square (car triple))
+                         (square (cadr triple)))))
+                 all-triples))
+
+;; The above is a pretty slow way of getting there. But - this is not an
+;; algorithms book.
+
+;;;;;;;;;;;;;
+;; Ex 3.70 ;;
+
+(define (merge-weighted s1 s2 weight)
+  (cond ((stream-null? s1) s2)
+        ((stream-null? s2) s1)
+        (else (let ((s1car (stream-car s1))
+                    (s2car (stream-car s2)))
+                (cond ((< (weight s1car) (weight s2car))
+                       (cons-stream s1car
+                                    (merge-weighted (stream-cdr s1) s2 weight)))
+                      ((> (weight s1car) (weight s2car))
+                       (cons-stream s2car
+                                    (merge-weighted s1 (stream-cdr s2) weight)))
+                      ((< (apply max s1car) (apply max s2car))
+                       (cons-stream s1car
+                                    (merge-weighted (stream-cdr s1) s2 weight)))
+                      ((> (apply max s1car) (apply max s2car))
+                       (cons-stream s2car
+                                    (merge-weighted s1 (stream-cdr s2) weight)))
+                      (else
+                       (cons-stream s1car
+                                    (merge-weighted (stream-cdr s1) (stream-cdr s2) weight))))))))
+
+(define (weighted-pairs s1 s2 weight)
+  (cons-stream
+   (list (stream-car s1) (stream-car s2))
+   (merge-weighted (stream-map (lambda (x)
+                                 (list (stream-car s1) x))
+                               (stream-cdr s2))
+                   (weighted-pairs (stream-cdr s1) (stream-cdr s2) weight)
+                   weight)))
+
+(define (weight1 pair)
+  (apply + pair))
+
+(define weighted-int-pairs (weighted-pairs integers integers weight1))
+
+(define (weight2 pair)
+  (+ (* 2 (car pair))
+     (* 3 (cadr pair))
+     (* 5 (car pair) (cadr pair))))
+
+(define hamming-pairs (weighted-pairs hamming hamming weight2))
+
+;;;;;;;;;;;;;
+;; Ex 3.71 ;;
+
+;; Ramanujam numbers - elegant solution
+
+(define (cube x) (* x x x))
+
+(define (r-weight pair)
+  (+ (cube (car pair))
+     (cube (cadr pair))))
+
+(define r-stream
+  (weighted-pairs integers integers r-weight))
+
+(define (r-numbers s)
+  (let ((r1 (stream-car s))
+        (r2 (stream-ref s 1)))
+    (if (= (r-weight r1) (r-weight r2))
+        (cons-stream (list r1 r2 (r-weight r1))
+                     (r-numbers (stream-cdr (stream-cdr s))))
+        (r-numbers (stream-cdr s)))))
+
+;; => (display-stream-to (r-numbers r-stream) 6)
+
+;; ((9 10) (1 12) 1729)
+;; ((9 15) (2 16) 4104)
+;; ((18 20) (2 24) 13832)
+;; ((19 24) (10 27) 20683)
+;; ((18 30) (4 32) 32832)
+;; ((15 33) (2 34) 39312)
+
+;;;;;;;;;;;;;
+;; Ex 3.72 ;;
+
+(define (sum-sq-weight pair)
+  (+ (square (car pair))
+     (square (cadr pair))))
+
+(define r2-stream
+  (weighted-pairs integers integers sum-sq-weight))
+
+(define (r2-numbers s)
+  (let ((r1 (stream-car s))
+        (r2 (stream-ref s 1))
+        (r3 (stream-ref s 2)))
+    (if (= (sum-sq-weight r1) (sum-sq-weight r2) (sum-sq-weight r3))
+        (cons-stream (list r1 r2 r3 (sum-sq-weight r1))
+                     (r2-numbers (stream-cdr s)))  ;; > 3 such pairs are also possible
+        (r2-numbers (stream-cdr s)))))
+
+;; => (display-stream-to (r2-numbers r2-stream) 6)
+
+;; ((10 15) (6 17) (1 18) 325)
+;; ((13 16) (8 19) (5 20) 425)
+;; ((17 19) (11 23) (5 25) 650)
+;; ((14 23) (10 25) (7 26) 725)
+;; ((19 22) (13 26) (2 29) 845)
+;; ((15 25) (11 27) (3 29) 850)
+;; ((21 22) (14 27) (5 30) 925)
+;; ((20 25) (8 31) (1 32) 1025)
+;; ((23 24) (12 31) (9 32) 1105)  ;; Note these two
+;; ((12 31) (9 32) (4 33) 1105)   ;; Note these two
+;; ((25 25) (17 31) (5 35) 1250)
+;; ((20 30) (12 34) (2 36) 1300)
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; Streams as signals ;;
+
+(define (integral integrand initial-value dt)
+  (define int
+    (cons-stream initial-value
+                 (add-streams (scale-stream integrand dt)
+                              int)))
+  int)
+
+;;;;;;;;;;;;;
+;; Ex 3.73 ;;
+
+(define (RC R C dt)
+  (lambda (i-seq v0)
+    (add-streams (scale-stream i-seq R)
+                 (integral (scale-stream i-seq (/ 1 C))
+                           v0 dt))))
+
+;;;;;;;;;;;;;
+;; Ex 3.74 ;;
+
+(define (sign-change-detector new-val old-val)
+  (if (>= (* new-val old-val) 0)
+      0
+      (if (> new-val 0) 1 -1)))
+
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector
+    (stream-car input-stream)
+    last-value)
+   (make-zero-crossings
+    (stream-cdr input-stream)
+    (stream-car input-stream))))
+
+(define zero-crossings
+  (make-zero-crossings sense-data 0))
+
+(define _zero-crossings
+  (stream-map sign-change-detector
+              sense-data
+              (cons-stream 0 sense-data)))
